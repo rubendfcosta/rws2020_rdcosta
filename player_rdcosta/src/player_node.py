@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 import rospy
+from rws2020_msgs.msg import MakeAPlay
 from std_msgs.msg import String
 
 class Player():
 
     def  __init__(self, player_name):
         self.player_name = player_name
-
-
 
         red_team =rospy.get_param('/red_team')
         blue_team = rospy.get_param('/blue_team')
@@ -33,6 +32,12 @@ class Player():
         rospy.logwarn('I am ' + self.player_name + ' and I am on team ' + self.my_team + '. '+ self.prey_team + ' players are all going die!')
         rospy.loginfo('I am affraid of ' + str(self.hunters))
 
+        rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack())
+
+    def makeAPlayCallBack(self,msg):
+        self.max_vel = msg.turtle
+        print('Received message make a play ... My velocity is '+ self.max_vel)
+
 def callback(msg):
     print("Received a message containing string:" + msg.data)
     #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
@@ -43,7 +48,7 @@ def main():
 
     player = Player('rdcosta')
 
-    rospy.Subscriber("chatter", String, callback)
+
     rospy.spin()
 
 if __name__=="__main__":
