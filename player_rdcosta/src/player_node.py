@@ -15,6 +15,7 @@ import rospy
 import tf
 from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
+from visualization_msgs.msg import Marker
 
 
 def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
@@ -116,6 +117,21 @@ class Player:
         self.player_name = player_name
         self.listener = tf.TransformListener()
 
+        self.mbocas = Marker(ns= self.player_name,id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD,
+                             )
+        self.mbocas.header.frame_id = "rdcosta"
+        self.mbocas.header.stamp = rospy.Time.now()
+        self.mbocas.pose.position.y= 0.5
+        self.mbocas.pose.orientation.w = 1
+        self.mbocas.scale.z = 0.5
+        self.mbocas.color.a= 1
+        self.mbocas.color.r =0
+        self.mbocas.color.g = 0
+        self.mbocas.color.b = 0
+        self.mbocas.text = "..."
+
+        self.pub_bocas =rospy.Publisher ('/bocas', Marker, queue_size=1)
+
         red_team = rospy.get_param('/red_team')
         green_team = rospy.get_param('/green_team')
         blue_team = rospy.get_param('/blue_team')
@@ -149,21 +165,53 @@ class Player:
         max_vel, max_angle = msg.turtle, math.pi / 30
 
         if msg.blue_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
-            target = msg.blue_alive[0]  #  select the first alive blue player (I am hunting blue)
-            distance, angle = getDistanceAndAngleToTarget(self.listener,
+
+            self.min_dist_blue=1000000
+            self.angle_blue=0
+            self.idx_blue=0
+            for x in range(0, len(msg.blue_alive)):
+                target = msg.blue_alive[x]  # select the first alive blue player (I am hunting blue)
+                distance, angle = getDistanceAndAngleToTarget(self.listener,
                                                           self.player_name, target)
+
+                if distance< self.min_dist_blue:
+                    self.min_dist_blue=distance
+                    self.angle_blue=angle
+                    self.idx_blue=x
+
+            self.mbocas.text = 'Ja te apanho' + target
+
+            for x in range(0, len(msg.red_alive)):
+                targetr = msg.red_alive[x]  # select the first alive blue player (I am hunting blue)
+                distancer, angler = getDistanceAndAngleToTarget(self.listener,
+                                                          msg.blue_alive[self.idx_blue], targetr)
+
+                if distancer < distance:
+                    for x in range(0, len(msg.red_alive)):
+                        target = msg.red_alive[x]  # select the first alive blue player (I am hunting blue)
+                        distance, angle = getDistanceAndAngleToTarget(self.listener,
+                                                                        self.player_name, target)
+                        distance=-distance
+                        angle=angle
+                    self.mbocas.text = 'Xauzinhooo'
 
             if angle is None:
                 angle = 0
             vel = max_vel  # full throttle
             rospy.loginfo(self.player_name + ': Hunting ' + str(target) + '(' + str(distance) + ' away)')
+
+            self.mbocas.header.stamp = rospy.Time.now()
+            self.pub_bocas.publish(self.mbocas)
+
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = getDistanceAndAngleToTarget(self.listener, self.player_name, target)
             vel = max_vel  # full throttle
             rospy.loginfo(self.player_name + ': Moving to the center of the arena.')
             rospy.loginfo('I am ' + str(distance) + ' from ' + target)
-
+            self.mbocas.text = 'Boring'
+            self.mbocas.header.stamp = rospy.Time.now()
+            self.pub_bocas.publish(self.mbocas)
         # Actually move the player
         movePlayer(self.br, self.player_name, self.transform, vel, angle, max_vel)
 
