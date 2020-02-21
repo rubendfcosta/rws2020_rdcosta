@@ -49,7 +49,7 @@ def randomizePlayerPose(transform, arena_radius=8):
     transform.translation.y = initial_y
     q = tf.transformations.quaternion_from_euler(0, 0, initial_rotation)
     transform.rotation = Quaternion(q[0], q[1], q[2], q[3])
-
+    #bla
 
 def movePlayer(tf_broadcaster, player_name, transform_now, vel, angle, max_vel):
     """
