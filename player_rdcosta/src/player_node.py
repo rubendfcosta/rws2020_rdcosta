@@ -148,8 +148,8 @@ class Player:
 
         max_vel, max_angle = msg.turtle, math.pi / 30
 
-        if msg.green_alive:  # PURSUIT MODE: Follow any green player (only if there is at least one green alive)
-            target = msg.green_alive[0]  # select the first alive green player (I am hunting green)
+        if msg.blue_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
+            target = msg.blue_alive[0]  # select the first alive blue player (I am hunting blue)
             distance, angle = getDistanceAndAngleToTarget(self.listener,
                                                           self.player_name, target)
 
