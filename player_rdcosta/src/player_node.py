@@ -16,6 +16,7 @@ import tf
 from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
 from visualization_msgs.msg import Marker
+from rws2020_msgs.srv import Warp,WarpResponse
 
 
 def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
@@ -160,6 +161,22 @@ class Player:
 
         rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)  # Subscribe make a play msg
 
+
+        self.warp_server = rospy.Service('~warp', Warp, self.warpServiceCallback)
+
+    def warpServiceCallback(self,req):
+        rospy.loginfo("Someone called the service for ")
+
+
+        quat = (0,0,0,1)
+        trans=(req.x,req.y,0)
+
+        self.br.sendTransform(trans, quat, rospy.Time.now(), self.player_name, "world")
+
+        response = WarpResponse()
+        response.success = True
+        return response
+
     def makeAPlayCallBack(self, msg):
 
         max_vel, max_angle = msg.turtle, math.pi / 30
@@ -191,7 +208,7 @@ class Player:
                         target = msg.red_alive[x]  # select the first alive blue player (I am hunting blue)
                         distance, angle = getDistanceAndAngleToTarget(self.listener,
                                                                         self.player_name, target)
-                        distance=-distance
+                        distance=distance
                         angle=angle
                     self.mbocas.text = 'Xauzinhooo'
 
@@ -212,6 +229,7 @@ class Player:
             self.mbocas.text = 'Boring'
             self.mbocas.header.stamp = rospy.Time.now()
             self.pub_bocas.publish(self.mbocas)
+
         # Actually move the player
         movePlayer(self.br, self.player_name, self.transform, vel, angle, max_vel)
 
